@@ -5,9 +5,6 @@ namespace APIStarted.Models
 {
     public class Members : Account
     {
-        [BsonId]
-        [BsonRepresentation(BsonType.ObjectId)]
-        public string Id { get; set; }
         public string Name { get; set; }
         public string Created { get; set; }
         public string Address { get; set; }
@@ -19,6 +16,9 @@ namespace APIStarted.Models
 
     public class Account
     {
+        [BsonId]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string Id { get; set; }
         public string Username { get; set; }
         public string Password { get; set; }
     }

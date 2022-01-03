@@ -7,5 +7,6 @@ namespace APIStarted
         public string Message { get; set; }
         public bool Code { get; set; }
         public List<T> Data { get; set; }
+        public string Token { get; set; }
     }
 }

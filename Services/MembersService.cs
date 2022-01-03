@@ -48,6 +48,11 @@ namespace APIStarted.Services
             return query;
         }
 
+        public List<Members> FindAccount(string username) {
+            var memberDB = _members.Find(x => x.Username == username).ToList();
+            return memberDB;
+        }
+
         public List<Members> Get(string id)
         {
             var idParameter = id;
@@ -78,7 +83,6 @@ namespace APIStarted.Services
             => _members.FindOneAndDelete<Members>(members => members.Id == id);
         public bool Login (Account account)
         {
-            var login = false;
             var memberDB = _members.Find(x => x.Username == account.Username && x.Password == account.Password).ToList();
             if (memberDB.Count > 0)
             {
