@@ -11,6 +11,7 @@ using System.Security.Claims;
 using System;
 using System.Linq;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Net.Http.Headers;
 
 namespace APIStarted.Controllers
 {
@@ -20,13 +21,14 @@ namespace APIStarted.Controllers
     {
         private readonly MembersService _membersService;
         private IConfiguration _config;
+        private SymmetricSecurityKey _key;
 
         public LoginControllers(MembersService membersService, IConfiguration config)
         {
             _membersService = membersService;
             _config = config;
+            _key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
         }
-
 
         [HttpPost]
         public ActionResult<JSONMessage<Account>> Login(Account account)
@@ -59,7 +61,7 @@ namespace APIStarted.Controllers
 
         private string GenerateJSONWebToken (Account account)
         {
-            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
+            var securityKey = _key;
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
             var id = _membersService.FindAccount(account.Username);
 
@@ -82,6 +84,24 @@ namespace APIStarted.Controllers
             return encodeToken;
         }
 
+        private string DecodeToken (string token)
+        {
+            // var handler = new JwtSecurityTokenHandler().ValidateToken(token, new TokenValidationParameters() {
+            //     IssuerSigningKey = _key,
+            //     ValidIssuer =  _config["Jwt:Issuer"],
+            //     ValidateIssuer = true,
+            //     ValidAudience =  _config["Jwt:Issuer"],
+            //     ValidateAudience = true
+            // }, out SecurityToken sToken);
+
+            // var stream = token;
+            var handler = new JwtSecurityTokenHandler();
+            var jsonToken = handler.ReadToken(token);
+            var tokenS = jsonToken as JwtSecurityToken;
+            var jti = tokenS.Claims.First(claim => claim.Type == "nameid").Value;
+            return jti;
+        }
+
         [Authorize]
         [HttpPost("Post")]
         public string Post()
@@ -94,8 +114,21 @@ namespace APIStarted.Controllers
 
         [Authorize]
         [HttpGet("GetValue")]
-        public ActionResult<IEnumerable<string>> Get() {
-            return new string[] { "Value 1", "Value 2", "Value 3" };
+        // public ActionResult<IEnumerable<string>> Get() 
+        public string Get() 
+        {
+            object obj = new object();
+            // var a = DecodeToken("").Claims.First(x => x.Type == ClaimTypes.Name).Value;
+            var accessToken = Request.Headers[HeaderNames.Authorization];
+            var accessTokenBearer = accessToken.ToString().Replace("Bearer ", string.Empty);
+            var b = HttpContext.User.Identity;
+            var a = DecodeToken(accessTokenBearer);
+            // obj = a;
+            // return new string[] { "Value 1", "Value 2", "Value 3" };
+            // var data = obj.
+            var data = a;
+            obj = a;
+            return obj.ToString();
         }
     }
 }
