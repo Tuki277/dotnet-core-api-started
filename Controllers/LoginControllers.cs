@@ -12,6 +12,7 @@ using System;
 using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Net.Http.Headers;
+using APIStarted.Helpers;
 
 namespace APIStarted.Controllers
 {
@@ -20,14 +21,16 @@ namespace APIStarted.Controllers
      public class LoginControllers : ControllerBase
     {
         private readonly MembersService _membersService;
+        private readonly AdminAuthenticationHelpers _adminAuthenticationHelpers;
         private IConfiguration _config;
         private SymmetricSecurityKey _key;
 
-        public LoginControllers(MembersService membersService, IConfiguration config)
+        public LoginControllers(MembersService membersService, IConfiguration config, AdminAuthenticationHelpers adminAuthenticationHelpers)
         {
             _membersService = membersService;
             _config = config;
             _key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
+            _adminAuthenticationHelpers = adminAuthenticationHelpers;
         }
 
         [HttpPost]
@@ -59,6 +62,47 @@ namespace APIStarted.Controllers
             return json;
         }
 
+        [Authorize]
+        [HttpPost("Post")]
+        public string Post()
+        {
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+            IList<Claim> claim = identity.Claims.ToList();
+            var userName = claim[0].Value;
+            return "Welcome to " + userName;
+        }
+
+        [Authorize]
+        [HttpGet("GetValue")]
+        public ActionResult<IEnumerable<string>> Get() 
+        // public string Get() 
+        {
+            var token = getTokenFormClient();
+            var id = DecodeToken(token);
+            var permission = _adminAuthenticationHelpers.CheckPermission(id);
+            if ( permission == 0) {
+                return  new string[] { "NOT PERMISSION" };
+            }
+            else {
+                return new string[] { "Value 1", "Value 2", "Value 3" };
+            }
+        }
+
+        private string DecodeToken (string token)
+        {
+            var handler = new JwtSecurityTokenHandler();
+            var jsonToken = handler.ReadToken(token);
+            var tokenS = jsonToken as JwtSecurityToken;
+            var jti = tokenS.Claims.First(claim => claim.Type == "nameid").Value;
+            return jti;
+        }
+
+        private string getTokenFormClient ()
+        {
+            var token = Request.Headers[HeaderNames.Authorization];
+            var accessToken = token.ToString().Replace("Bearer ", string.Empty);
+            return accessToken;
+        }
         private string GenerateJSONWebToken (Account account)
         {
             var securityKey = _key;
@@ -82,53 +126,6 @@ namespace APIStarted.Controllers
 
             var encodeToken = new JwtSecurityTokenHandler().WriteToken(token);
             return encodeToken;
-        }
-
-        private string DecodeToken (string token)
-        {
-            // var handler = new JwtSecurityTokenHandler().ValidateToken(token, new TokenValidationParameters() {
-            //     IssuerSigningKey = _key,
-            //     ValidIssuer =  _config["Jwt:Issuer"],
-            //     ValidateIssuer = true,
-            //     ValidAudience =  _config["Jwt:Issuer"],
-            //     ValidateAudience = true
-            // }, out SecurityToken sToken);
-
-            // var stream = token;
-            var handler = new JwtSecurityTokenHandler();
-            var jsonToken = handler.ReadToken(token);
-            var tokenS = jsonToken as JwtSecurityToken;
-            var jti = tokenS.Claims.First(claim => claim.Type == "nameid").Value;
-            return jti;
-        }
-
-        [Authorize]
-        [HttpPost("Post")]
-        public string Post()
-        {
-            var identity = HttpContext.User.Identity as ClaimsIdentity;
-            IList<Claim> claim = identity.Claims.ToList();
-            var userName = claim[0].Value;
-            return "Welcome to " + userName;
-        }
-
-        [Authorize]
-        [HttpGet("GetValue")]
-        // public ActionResult<IEnumerable<string>> Get() 
-        public string Get() 
-        {
-            object obj = new object();
-            // var a = DecodeToken("").Claims.First(x => x.Type == ClaimTypes.Name).Value;
-            var accessToken = Request.Headers[HeaderNames.Authorization];
-            var accessTokenBearer = accessToken.ToString().Replace("Bearer ", string.Empty);
-            var b = HttpContext.User.Identity;
-            var a = DecodeToken(accessTokenBearer);
-            // obj = a;
-            // return new string[] { "Value 1", "Value 2", "Value 3" };
-            // var data = obj.
-            var data = a;
-            obj = a;
-            return obj.ToString();
         }
     }
 }

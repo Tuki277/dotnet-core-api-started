@@ -17,6 +17,7 @@ using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using APIStarted.Helpers;
 
 namespace APIStarted
 {
@@ -64,6 +65,9 @@ namespace APIStarted
             services.AddSingleton<DepartmentsService>();
             services.AddSingleton<MembersService>();
             services.AddSingleton<PositionsService>();
+
+            //register helpers
+            services.AddSingleton<AdminAuthenticationHelpers>();
 
             services.AddControllers();
             services.AddSwaggerGen(c =>

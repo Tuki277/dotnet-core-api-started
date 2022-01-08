@@ -4,7 +4,7 @@ using APIStarted.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 
-namespace LearnAPiDotNetCore.Controllers
+namespace APIStarted.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
